@@ -1,0 +1,36 @@
+name: UnrealCon project check
+
+on:
+  push:
+    branches: [main, unreal-bootstrap]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Validate Unreal project scaffold
+        shell: bash
+        run: |
+          set -euo pipefail
+          test -f UnrealCon.uproject
+          test -f Source/UnrealCon/UnrealCon.Build.cs
+          test -f Source/UnrealCon/UnrealCon.cpp
+          test -f Source/UnrealCon/UnrealConGameMode.cpp
+          test -f Source/UnrealCon/UnrealConVehiclePawn.cpp
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+          project = json.loads(Path("UnrealCon.uproject").read_text())
+          assert project["FileVersion"] == 3
+          assert any(m["Name"] == "UnrealCon" for m in project["Modules"])
+          print("Unreal project descriptor and required source files are present.")
+          PY
