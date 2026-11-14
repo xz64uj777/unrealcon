@@ -1,0 +1,17 @@
+{
+  "FileVersion": 3,
+  "EngineAssociation": "5.5",
+  "Category": "Games",
+  "Description": "Mobile-first construction equipment simulator built with Unreal Engine.",
+  "Modules": [
+    {
+      "Name": "UnrealCon",
+      "Type": "Runtime",
+      "LoadingPhase": "Default"
+    }
+  ],
+  "TargetPlatforms": [
+    "Android",
+    "Windows"
+  ]
+}
