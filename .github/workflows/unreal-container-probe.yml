@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  packages: read
 
 jobs:
   probe:
@@ -18,37 +17,24 @@ jobs:
     steps:
       - name: Check runner capacity
         run: |
-          echo "=== CPU ==="
           nproc
-          echo "=== MEMORY ==="
           free -h
-          echo "=== DISK ==="
           df -h /
-          echo "=== DOCKER ==="
           docker version
 
-      - name: Authenticate to GitHub Container Registry when token is available
-        env:
-          GHCR_TOKEN: ${{ secrets.UE_GITHUB_TOKEN }}
-        run: |
-          if [ -n "$GHCR_TOKEN" ]; then
-            echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
-          else
-            echo "UE_GITHUB_TOKEN is not configured; trying public image access."
-          fi
+      - name: Pull public prebuilt Unreal Engine 5.5.4 image
+        run: docker pull wukakuki/unreal-engine:dev-slim-5.5.4
 
-      - name: Pull official Unreal Engine 5.5 slim development image
-        run: docker pull ghcr.io/epicgames/unreal-engine:dev-slim-5.5
-
-      - name: Verify Unreal Engine and Android toolchain in image
+      - name: Inspect engine and Android toolchain
         run: |
-          docker run --rm --entrypoint bash ghcr.io/epicgames/unreal-engine:dev-slim-5.5 -lc '
+          docker run --rm --entrypoint bash wukakuki/unreal-engine:dev-slim-5.5.4 -lc '
             set -e
-            echo "=== ENGINE ==="
-            test -x /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
-            /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd -version || true
-            echo "=== ANDROID SDK LOCATIONS ==="
-            find /home/ue4 /opt /usr/local -maxdepth 5 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -40 || true
-            echo "=== ENVIRONMENT ==="
+            echo "=== ENGINE BINARIES ==="
+            find / -maxdepth 6 -type f -name UnrealEditor-Cmd 2>/dev/null | head -10
+            echo "=== ANDROID SDK/NDK ==="
+            find /home /opt /usr/local -maxdepth 6 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -40 || true
+            echo "=== SDK ENVIRONMENT ==="
             env | sort | grep -Ei "ANDROID|JAVA|NDK|SDK" || true
           '
+          echo "=== REMAINING RUNNER DISK ==="
+          df -h /
