@@ -26,7 +26,8 @@ AUnrealConYard::AUnrealConYard()
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if (!Cube.Succeeded()) return;
 
-    auto AddBlock = [this, &Cube](const TCHAR* Name, FVector Location, FVector Scale)
+    // Cube is a function-local static, so it does not need to be captured.
+    auto AddBlock = [this](const TCHAR* Name, FVector Location, FVector Scale)
     {
         UStaticMeshComponent* Block = CreateDefaultSubobject<UStaticMeshComponent>(Name);
         Block->SetupAttachment(GetRootComponent());
