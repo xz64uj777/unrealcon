@@ -2,26 +2,40 @@
 
 A new Unreal Engine project for a mobile-first, realistic construction equipment simulator. This repository is intentionally separate from the browser-game repositories.
 
-## Project status
+## Current prototype work
 
-- Unreal Engine project descriptor and C++ runtime module scaffolded.
-- Initial vehicle pawn and spring-arm follow camera added.
-- Basic keyboard/gamepad movement mappings included.
+- Unreal Engine 5.5 C++ project scaffold and game module.
+- Prototype wheel loader silhouette with cab, chassis, wheels, lift arms and bucket.
+- Follow camera with mouse/gamepad orbit input.
+- Basic keyboard/gamepad driving controls.
+- Runtime-generated construction yard: ground, access road, workshop, parts store, material bays, aggregate piles and equipment pad.
+- Basic directional and sky lighting.
 - Android and Windows are the initial target platforms.
-- This is a foundation, not yet a packaged or playable APK. No Unreal Engine installation is available in the GitHub runner by default, so a successful GitHub source check must not be mistaken for an Unreal compile or Android package.
+
+## Current limitations
+
+This is still an early source prototype. The loader uses Unreal's built-in primitive meshes; it does not yet have production machine models, Chaos vehicle physics, articulated hydraulics, touch controls, mission systems, or an Android package. The GitHub Actions workflow currently validates project files only; it does not compile Unreal Engine.
 
 ## Open the project
 
-Open `UnrealCon.uproject` with Unreal Engine 5.5 or a compatible later 5.x release. Generate IDE project files if prompted, then build the `UnrealConEditor` target.
+Open `UnrealCon.uproject` with Unreal Engine 5.5 or a compatible 5.x installation. Generate IDE project files if prompted, then build the `UnrealConEditor` target and press Play. The game mode spawns the yard and the prototype loader when the level starts.
 
-## First playable milestone
+## Controls (prototype)
 
-1. Create a construction yard test map and lighting.
-2. Add realistic machine meshes and wheel/track physics.
-3. Replace the prototype pawn movement with Chaos Vehicles where appropriate.
-4. Add mobile touch controls, camera orbit and pinch zoom.
+- W / S: forward / reverse
+- A / D: steer
+- Mouse: orbit camera
+- Gamepad left stick: drive / steer
+- Gamepad right stick: orbit camera
+
+## Next playable milestones
+
+1. Replace primitive placeholder geometry with realistic loader and site assets.
+2. Implement proper vehicle physics and articulated loader hydraulics.
+3. Add mobile touch joysticks, camera orbit and pinch zoom.
+4. Add equipment yard interaction, loading and unloading tasks.
 5. Build and test an Android package on a real device.
 
 ## Android
 
-Enable Android platform support in the installed Unreal Engine version and configure the Android SDK/NDK required by that engine release before packaging. The project has not yet been packaged or device-tested.
+Enable Android platform support in the installed Unreal Engine version and configure the Android SDK/NDK required by that engine release before packaging. No APK has been produced or device-tested yet.
