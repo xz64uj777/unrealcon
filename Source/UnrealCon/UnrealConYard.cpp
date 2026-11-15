@@ -14,7 +14,7 @@ AUnrealConYard::AUnrealConYard()
     UDirectionalLightComponent* Sun = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("YardSun"));
     Sun->SetupAttachment(SceneRoot);
     Sun->SetRelativeRotation(FRotator(-48.0f, -32.0f, 0.0f));
-    Sun->SetIntensity(8.0f);
+    Sun->SetIntensity(100000.0f);
     Sun->SetMobility(EComponentMobility::Movable);
 
     USkyLightComponent* Sky = CreateDefaultSubobject<USkyLightComponent>(TEXT("YardSky"));
