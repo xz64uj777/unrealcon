@@ -6,6 +6,9 @@ on:
     branches: [unreal-bootstrap]
     paths:
       - ".github/workflows/unreal-container-probe.yml"
+      - "Source/**"
+      - "Config/**"
+      - "UnrealCon.uproject"
 
 permissions:
   contents: read
@@ -42,13 +45,18 @@ jobs:
         run: |
           set -o pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          JAVA_HOME_HOST="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
           test -d "$SDK_ROOT"
+          test -x "$JAVA_HOME_HOST/bin/java"
           chmod -R a+rwX "$GITHUB_WORKSPACE"
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -v "$SDK_ROOT:/opt/android-sdk" \
+            -v "$JAVA_HOME_HOST:/opt/java" \
             -e ANDROID_HOME=/opt/android-sdk \
             -e ANDROID_SDK_ROOT=/opt/android-sdk \
+            -e JAVA_HOME=/opt/java \
+            -e PATH="/opt/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
             --entrypoint bash wukakuki/unreal-engine:dev-slim-5.5.4 -lc '
               set -e
               UE=/home/ue4/UnrealEngine
@@ -56,10 +64,7 @@ jobs:
               ls -la /opt/android-sdk
               find /opt/android-sdk -maxdepth 5 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -100 || true
               echo "=== JAVA IN CONTAINER ==="
-              command -v java || true
-              java -version 2>&1 || true
-              echo "=== ENGINE ANDROID SETUP ==="
-              find "$UE/Engine/Extras/Android" -maxdepth 3 -type f \( -name "SetupAndroid.sh" -o -name "SetupAndroid.command" \) -print 2>/dev/null || true
+              java -version
               echo "=== PROJECT FILE ==="
               test -f /workspace/UnrealCon.uproject
               echo "=== COMPILE EDITOR TARGET ==="
