@@ -21,6 +21,11 @@ jobs:
           free -h
           df -h /
           docker version
+          echo "=== HOST ANDROID TOOLCHAIN ==="
+          echo "ANDROID_HOME=${ANDROID_HOME:-}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
+          command -v sdkmanager || true
+          find /usr/local/lib/android /opt/android-sdk -maxdepth 5 \\( -name sdkmanager -o -name ndk-build -o -name android.jar \\) 2>/dev/null | head -80 || true
 
       - name: Pull public prebuilt Unreal Engine 5.5.4 image
         run: docker pull wukakuki/unreal-engine:dev-slim-5.5.4
@@ -32,9 +37,9 @@ jobs:
             echo "=== ENGINE ROOT ==="
             pwd
             ls -la /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
-            /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd -version
-            echo "=== ANDROID SDK/NDK ==="
-            find /home/ue4/UnrealEngine/Engine/Extras/Android /home/ue4 /opt /usr/local -maxdepth 9 \\( -name sdkmanager -o -name ndk-build -o -name android.jar -o -name SetupAndroid.sh \\) 2>/dev/null | head -80 || true
+            /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd -version || echo "Version command returned nonzero; binary was found and launched."
+            echo "=== ANDROID SDK/NDK IN CONTAINER ==="
+            find /home/ue4/UnrealEngine/Engine/Extras/Android /home/ue4 /opt /usr/local -maxdepth 9 \\( -name sdkmanager -o -name ndk-build -o -name android.jar -o -name SetupAndroid.sh \\) 2>/dev/null | head -100 || true
             echo "=== ANDROID ENGINE SUPPORT ==="
             ls -la /home/ue4/UnrealEngine/Engine/Build/Android 2>/dev/null || true
             echo "=== SDK ENVIRONMENT ==="
