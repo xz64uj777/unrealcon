@@ -19,11 +19,12 @@ AUnrealConVehiclePawn::AUnrealConVehiclePawn()
     VehicleBody->SetRelativeLocation(FVector(0.0f, 0.0f, 75.0f));
     VehicleBody->SetSimulatePhysics(false);
 
-    auto AddPart = [this, CubeMesh](const TCHAR* Name, const FVector& Location, const FVector& Scale)
+    UStaticMesh* Cube = CubeMesh.Object;
+    auto AddPart = [this, Cube](const TCHAR* Name, const FVector& Location, const FVector& Scale)
     {
         UStaticMeshComponent* Part = CreateDefaultSubobject<UStaticMeshComponent>(Name);
         Part->SetupAttachment(VehicleBody);
-        Part->SetStaticMesh(CubeMesh.Object);
+        Part->SetStaticMesh(Cube);
         Part->SetRelativeLocation(Location);
         Part->SetRelativeScale3D(Scale);
         Part->SetCollisionEnabled(ECollisionEnabled::NoCollision);
