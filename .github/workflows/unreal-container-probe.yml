@@ -1,4 +1,4 @@
-name: Unreal Engine container probe
+name: UnrealCon Android build
 
 on:
   workflow_dispatch:
@@ -14,39 +14,48 @@ permissions:
   contents: read
 
 jobs:
-  probe:
+  android:
     runs-on: ubuntu-22.04
-    timeout-minutes: 90
+    timeout-minutes: 120
     steps:
       - name: Check out UnrealCon project
         uses: actions/checkout@v4
 
-      - name: Check runner capacity and Android SDK
+      - name: Install Java 21 for Unreal Engine 5.5
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install Unreal Engine 5.5 Android toolchain
         shell: bash
         run: |
           set -e
-          nproc
-          free -h
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          SDKMANAGER="$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager"
+          test -x "$SDKMANAGER"
+          yes | "$SDKMANAGER" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDKMANAGER" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-34" \
+            "build-tools;34.0.0" \
+            "platform-tools" \
+            "ndk;25.1.8937393"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "NDKROOT=$SDK_ROOT/ndk/25.1.8937393" >> "$GITHUB_ENV"
+          echo "NDK_ROOT=$SDK_ROOT/ndk/25.1.8937393" >> "$GITHUB_ENV"
+          java -version
           df -h /
-          docker version
-          echo "=== HOST ANDROID TOOLCHAIN ==="
-          echo "ANDROID_HOME=${ANDROID_HOME:-}"
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
-          command -v sdkmanager || true
-          command -v javac || true
-          readlink -f "$(command -v javac)" 2>/dev/null || true
-          find /usr/local/lib/android /opt/android-sdk -maxdepth 6 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -100 || true
 
       - name: Pull public prebuilt Unreal Engine 5.5.4 image
         run: docker pull wukakuki/unreal-engine:dev-slim-5.5.4
 
-      - name: Expose Android SDK and compile UnrealCon editor target
+      - name: Compile UnrealCon and package Android ARM64 APK
         shell: bash
         run: |
-          set -o pipefail
+          set -euo pipefail
           SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
-          JAVA_HOME_HOST="$(dirname "$(dirname "$(readlink -f "$(command -v javac)")")")"
-          test -d "$SDK_ROOT"
+          JAVA_HOME_HOST="$JAVA_HOME"
+          test -d "$SDK_ROOT/ndk/25.1.8937393"
           test -x "$JAVA_HOME_HOST/bin/java"
           chmod -R a+rwX "$GITHUB_WORKSPACE"
           docker run --rm \
@@ -55,22 +64,40 @@ jobs:
             -v "$JAVA_HOME_HOST:/opt/java" \
             -e ANDROID_HOME=/opt/android-sdk \
             -e ANDROID_SDK_ROOT=/opt/android-sdk \
+            -e NDKROOT=/opt/android-sdk/ndk/25.1.8937393 \
+            -e NDK_ROOT=/opt/android-sdk/ndk/25.1.8937393 \
             -e JAVA_HOME=/opt/java \
             -e PATH="/opt/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
             --entrypoint bash wukakuki/unreal-engine:dev-slim-5.5.4 -lc '
               set -e
               UE=/home/ue4/UnrealEngine
-              echo "=== ANDROID SDK MOUNT ==="
-              ls -la /opt/android-sdk
-              find /opt/android-sdk -maxdepth 5 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -100 || true
-              echo "=== JAVA IN CONTAINER ==="
+              echo "=== TOOLCHAIN ==="
               java -version
-              echo "=== PROJECT FILE ==="
-              test -f /workspace/UnrealCon.uproject
-              echo "=== COMPILE EDITOR TARGET ==="
+              test -x /opt/android-sdk/ndk/25.1.8937393/ndk-build
+              test -f /opt/android-sdk/platforms/android-34/android.jar
+              echo "=== EDITOR COMPILE ==="
               "$UE/Engine/Build/BatchFiles/Linux/Build.sh" UnrealConEditor Linux Development -Project=/workspace/UnrealCon.uproject -NoHotReloadFromIDE
+              echo "=== ANDROID PACKAGE ==="
+              "$UE/Engine/Build/BatchFiles/RunUAT.sh" BuildCookRun \
+                -project=/workspace/UnrealCon.uproject \
+                -target=UnrealCon \
+                -noP4 -platform=Android -clientconfig=Development \
+                -cook -build -stage -pak -archive \
+                -archivedirectory=/workspace/Artifacts \
+                -cookflavor=ASTC -utf8output -unattended
+              echo "=== APK OUTPUT ==="
+              find /workspace/Artifacts -type f -name "*.apk" -printf "%p %s bytes\\n"
+              test "$(find /workspace/Artifacts -type f -name "*.apk" | wc -l)" -gt 0
             '
 
-      - name: Confirm remaining runner disk
+      - name: Upload Android APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: UnrealCon-Android-APK
+          path: Artifacts/**/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Report runner disk
         if: always()
         run: df -h /
