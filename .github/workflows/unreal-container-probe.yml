@@ -1,0 +1,54 @@
+name: Unreal Engine container probe
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [unreal-bootstrap]
+    paths:
+      - ".github/workflows/unreal-container-probe.yml"
+
+permissions:
+  contents: read
+  packages: read
+
+jobs:
+  probe:
+    runs-on: ubuntu-22.04
+    timeout-minutes: 90
+    steps:
+      - name: Check runner capacity
+        run: |
+          echo "=== CPU ==="
+          nproc
+          echo "=== MEMORY ==="
+          free -h
+          echo "=== DISK ==="
+          df -h /
+          echo "=== DOCKER ==="
+          docker version
+
+      - name: Authenticate to GitHub Container Registry when token is available
+        env:
+          GHCR_TOKEN: ${{ secrets.UE_GITHUB_TOKEN }}
+        run: |
+          if [ -n "$GHCR_TOKEN" ]; then
+            echo "$GHCR_TOKEN" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+          else
+            echo "UE_GITHUB_TOKEN is not configured; trying public image access."
+          fi
+
+      - name: Pull official Unreal Engine 5.5 slim development image
+        run: docker pull ghcr.io/epicgames/unreal-engine:dev-slim-5.5
+
+      - name: Verify Unreal Engine and Android toolchain in image
+        run: |
+          docker run --rm --entrypoint bash ghcr.io/epicgames/unreal-engine:dev-slim-5.5 -lc '
+            set -e
+            echo "=== ENGINE ==="
+            test -x /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
+            /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd -version || true
+            echo "=== ANDROID SDK LOCATIONS ==="
+            find /home/ue4 /opt /usr/local -maxdepth 5 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -40 || true
+            echo "=== ENVIRONMENT ==="
+            env | sort | grep -Ei "ANDROID|JAVA|NDK|SDK" || true
+          '
