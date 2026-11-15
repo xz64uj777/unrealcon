@@ -11,4 +11,5 @@ class UNREALCON_API AUnrealConGameMode : public AGameModeBase
 
 public:
     AUnrealConGameMode();
+    virtual void BeginPlay() override;
 };
