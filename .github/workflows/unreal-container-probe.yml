@@ -25,14 +25,18 @@ jobs:
       - name: Pull public prebuilt Unreal Engine 5.5.4 image
         run: docker pull wukakuki/unreal-engine:dev-slim-5.5.4
 
-      - name: Inspect engine and Android toolchain
+      - name: Inspect Unreal Engine installation and Android toolchain
         run: |
           docker run --rm --entrypoint bash wukakuki/unreal-engine:dev-slim-5.5.4 -lc '
             set -e
-            echo "=== ENGINE BINARIES ==="
-            find / -maxdepth 6 -type f -name UnrealEditor-Cmd 2>/dev/null | head -10
+            echo "=== ENGINE ROOT ==="
+            pwd
+            ls -la /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
+            /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd -version
             echo "=== ANDROID SDK/NDK ==="
-            find /home /opt /usr/local -maxdepth 6 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -40 || true
+            find /home/ue4/UnrealEngine/Engine/Extras/Android /home/ue4 /opt /usr/local -maxdepth 9 \\( -name sdkmanager -o -name ndk-build -o -name android.jar -o -name SetupAndroid.sh \\) 2>/dev/null | head -80 || true
+            echo "=== ANDROID ENGINE SUPPORT ==="
+            ls -la /home/ue4/UnrealEngine/Engine/Build/Android 2>/dev/null || true
             echo "=== SDK ENVIRONMENT ==="
             env | sort | grep -Ei "ANDROID|JAVA|NDK|SDK" || true
           '
