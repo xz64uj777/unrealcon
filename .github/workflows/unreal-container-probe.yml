@@ -51,7 +51,7 @@ jobs:
           df -h /
 
       - name: Pull public prebuilt Unreal Engine 5.5.4 image
-        run: docker pull wukakuki/unreal-engine:dev-slim-5.5.4
+        run: docker pull wukakuki/unreal-engine:dev-5.5.4
 
       - name: Compile UnrealCon and package Android ARM64 APK
         shell: bash
@@ -72,7 +72,7 @@ jobs:
             -e NDK_ROOT=/opt/android-sdk/ndk/25.1.8937393 \
             -e JAVA_HOME=/opt/java \
             -e PATH="/opt/java/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin" \
-            --entrypoint bash wukakuki/unreal-engine:dev-slim-5.5.4 -lc '
+            --entrypoint bash wukakuki/unreal-engine:dev-5.5.4 -lc '
               set -e
               UE=/home/ue4/UnrealEngine
               echo "=== TOOLCHAIN ==="
