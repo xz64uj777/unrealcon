@@ -1,6 +1,8 @@
 #include "UnrealConYard.h"
 #include "Components/StaticMeshComponent.h"
 #include "Components/SceneComponent.h"
+#include "Components/DirectionalLightComponent.h"
+#include "Components/SkyLightComponent.h"
 #include "UObject/ConstructorHelpers.h"
 
 AUnrealConYard::AUnrealConYard()
@@ -8,6 +10,18 @@ AUnrealConYard::AUnrealConYard()
     PrimaryActorTick.bCanEverTick = false;
     USceneComponent* SceneRoot = CreateDefaultSubobject<USceneComponent>(TEXT("YardRoot"));
     SetRootComponent(SceneRoot);
+
+    UDirectionalLightComponent* Sun = CreateDefaultSubobject<UDirectionalLightComponent>(TEXT("YardSun"));
+    Sun->SetupAttachment(SceneRoot);
+    Sun->SetRelativeRotation(FRotator(-48.0f, -32.0f, 0.0f));
+    Sun->SetIntensity(8.0f);
+    Sun->SetMobility(EComponentMobility::Movable);
+
+    USkyLightComponent* Sky = CreateDefaultSubobject<USkyLightComponent>(TEXT("YardSky"));
+    Sky->SetupAttachment(SceneRoot);
+    Sky->SetMobility(EComponentMobility::Movable);
+    Sky->SetIntensity(1.0f);
+    Sky->bRealTimeCapture = true;
 
     static ConstructorHelpers::FObjectFinder<UStaticMesh> Cube(TEXT("/Engine/BasicShapes/Cube.Cube"));
     if (!Cube.Succeeded()) return;
