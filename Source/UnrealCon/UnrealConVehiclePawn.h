@@ -22,6 +22,8 @@ protected:
 private:
     void MoveForward(float Value);
     void Turn(float Value);
+    void CameraYaw(float Value);
+    void CameraPitch(float Value);
 
     UPROPERTY(VisibleAnywhere, Category="Vehicle")
     TObjectPtr<UStaticMeshComponent> VehicleBody;
