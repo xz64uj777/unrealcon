@@ -26,6 +26,10 @@ jobs:
           test -f Source/UnrealCon/UnrealCon.cpp
           test -f Source/UnrealCon/UnrealConGameMode.cpp
           test -f Source/UnrealCon/UnrealConVehiclePawn.cpp
+          test -f Source/UnrealCon/UnrealConYard.h
+          test -f Source/UnrealCon/UnrealConYard.cpp
+          test -f Config/DefaultEngine.ini
+          test -f Config/DefaultInput.ini
           python3 - <<'PY'
           import json
           from pathlib import Path
