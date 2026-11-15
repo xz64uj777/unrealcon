@@ -15,8 +15,13 @@ jobs:
     runs-on: ubuntu-22.04
     timeout-minutes: 90
     steps:
-      - name: Check runner capacity
+      - name: Check out UnrealCon project
+        uses: actions/checkout@v4
+
+      - name: Check runner capacity and Android SDK
+        shell: bash
         run: |
+          set -e
           nproc
           free -h
           df -h /
@@ -25,25 +30,42 @@ jobs:
           echo "ANDROID_HOME=${ANDROID_HOME:-}"
           echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
           command -v sdkmanager || true
-          find /usr/local/lib/android /opt/android-sdk -maxdepth 5 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -80 || true
+          command -v javac || true
+          readlink -f "$(command -v javac)" 2>/dev/null || true
+          find /usr/local/lib/android /opt/android-sdk -maxdepth 6 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -100 || true
 
       - name: Pull public prebuilt Unreal Engine 5.5.4 image
         run: docker pull wukakuki/unreal-engine:dev-slim-5.5.4
 
-      - name: Inspect Unreal Engine installation and Android toolchain
+      - name: Expose Android SDK and compile UnrealCon editor target
+        shell: bash
         run: |
-          docker run --rm --entrypoint bash wukakuki/unreal-engine:dev-slim-5.5.4 -lc '
-            set -e
-            echo "=== ENGINE ROOT ==="
-            pwd
-            ls -la /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd
-            /home/ue4/UnrealEngine/Engine/Binaries/Linux/UnrealEditor-Cmd -version || echo "Version command returned nonzero; binary was found and launched."
-            echo "=== ANDROID SDK/NDK IN CONTAINER ==="
-            find /home/ue4/UnrealEngine/Engine/Extras/Android /home/ue4 /opt /usr/local -maxdepth 9 \( -name sdkmanager -o -name ndk-build -o -name android.jar -o -name SetupAndroid.sh \) 2>/dev/null | head -100 || true
-            echo "=== ANDROID ENGINE SUPPORT ==="
-            ls -la /home/ue4/UnrealEngine/Engine/Build/Android 2>/dev/null || true
-            echo "=== SDK ENVIRONMENT ==="
-            env | sort | grep -Ei "ANDROID|JAVA|NDK|SDK" || true
-          '
-          echo "=== REMAINING RUNNER DISK ==="
-          df -h /
+          set -o pipefail
+          SDK_ROOT="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-/usr/local/lib/android/sdk}}"
+          test -d "$SDK_ROOT"
+          chmod -R a+rwX "$GITHUB_WORKSPACE"
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -v "$SDK_ROOT:/opt/android-sdk" \
+            -e ANDROID_HOME=/opt/android-sdk \
+            -e ANDROID_SDK_ROOT=/opt/android-sdk \
+            --entrypoint bash wukakuki/unreal-engine:dev-slim-5.5.4 -lc '
+              set -e
+              UE=/home/ue4/UnrealEngine
+              echo "=== ANDROID SDK MOUNT ==="
+              ls -la /opt/android-sdk
+              find /opt/android-sdk -maxdepth 5 \( -name sdkmanager -o -name ndk-build -o -name android.jar \) 2>/dev/null | head -100 || true
+              echo "=== JAVA IN CONTAINER ==="
+              command -v java || true
+              java -version 2>&1 || true
+              echo "=== ENGINE ANDROID SETUP ==="
+              find "$UE/Engine/Extras/Android" -maxdepth 3 -type f \( -name "SetupAndroid.sh" -o -name "SetupAndroid.command" \) -print 2>/dev/null || true
+              echo "=== PROJECT FILE ==="
+              test -f /workspace/UnrealCon.uproject
+              echo "=== COMPILE EDITOR TARGET ==="
+              "$UE/Engine/Build/BatchFiles/Linux/Build.sh" UnrealConEditor Linux Development -Project=/workspace/UnrealCon.uproject -NoHotReloadFromIDE
+            '
+
+      - name: Confirm remaining runner disk
+        if: always()
+        run: df -h /
