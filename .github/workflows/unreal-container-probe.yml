@@ -81,6 +81,16 @@ jobs:
               test -f /opt/android-sdk/platforms/android-34/android.jar
               echo "=== EDITOR COMPILE ==="
               "$UE/Engine/Build/BatchFiles/Linux/Build.sh" UnrealConEditor Linux Development -Project=/workspace/UnrealCon.uproject -NoHotReloadFromIDE
+              echo "=== ANDROID PLATFORM DIAGNOSTICS ==="
+              cat "$UE/Engine/Build/Build.version"
+              echo "--- Platform directories ---"
+              find "$UE/Engine/Platforms" -maxdepth 2 -type d 2>/dev/null | sort | head -100 || true
+              echo "--- Android platform files ---"
+              if test -d "$UE/Engine/Platforms/Android"; then find "$UE/Engine/Platforms/Android" -maxdepth 3 -type f | head -80; else echo "MISSING: Engine/Platforms/Android"; fi
+              echo "--- Android target rules ---"
+              find "$UE/Engine/Source/Programs/UnrealBuildTool" -iname "*Android*" -type f | head -40 || true
+              echo "--- Installed platform configuration ---"
+              grep -Rni "Android" "$UE/Engine/Build/InstalledPlatformInfo.ini" "$UE/Engine/Config/BaseEngine.ini" 2>/dev/null | head -80 || true
               echo "=== ANDROID PACKAGE ==="
               "$UE/Engine/Build/BatchFiles/RunUAT.sh" BuildCookRun \
                 -project=/workspace/UnrealCon.uproject \
